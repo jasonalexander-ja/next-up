@@ -1,0 +1,81 @@
+<li data-rowid="1">
+    <div class="ipsColumns ipsColumns_collapsePhone" style="background: #212121; display: flex;">
+        <img id="nextUserImg" src="https://cdn.radiopanel.co/562377c1-4d8a-41ae-aaeb-98a08a949d92/86496750-1688-44aa-aa0d-c9c1a67f028f.png" style="height: 3rem; margin-right: 9px; float: left; border-radius: 50%;">
+        <h4 class="ipsType_sectionHead ipsType_break">
+            <strong id="nextUserName"></strong>
+        </h4>
+        <div style="margin-left: auto;">
+            <span id="nextShowTimes" class="TimeBadgev2 badge_gradient" style="white-space: nowrap;"><b></b></span>
+        </div>
+    </div>
+    <div id="nextShowTitle" class="ipsType_normal ipsType_break"></div>
+    <script>
+        // Images to be used in case of error 
+        var apiCallFailed = "https://i.ibb.co/C8w3fzG/disconected.png";
+        var noEvents = "https://i.ibb.co/W2SXBV0/55e07698bca8e4aa1761121600c818e0.jpg";
+        // Gets all the relevant fields from the DOM 
+        var nextUserImg = document.getElementById("nextUserImg");
+        var nextUserName = document.getElementById("nextUserName");
+        var nextShowTimes = document.getElementById("nextShowTimes");
+        var nextShowTitle = document.getElementById("nextShowTitle");
+        // Entry point
+        getNextShow();
+        function getNextShow() {
+            // Form the request 
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                // If sucess 
+                if (this.readyState == 4 && this.status == 200) { 
+                    // If there is a response body 
+                    if(this.responseText) setNext(JSON.parse(this.responseText));
+                    // If there is no response body (no slots) 
+                    else setNext({}, false, true);
+                }
+                // If failed 
+                if (this.readyState == 4 && this.status != 200) setNext({}, true);
+            };
+            // Specify the URL 
+            xhttp.open("GET", "https://api.radiopanel.co/api/v1/slots/next", true);
+            // Set auth headers 
+            xhttp.setRequestHeader('x-tenant', '');
+            xhttp.setRequestHeader('Authorization', '');
+            // And send
+            xhttp.send();
+        }
+        // Function for the DOM manipulation 
+        function setNext(obj, apiFail, noSlots) {
+            // If there are no slots 
+            if(noSlots) {
+                nextUserImg.setAttribute("src", noEvents);
+                nextUserName.innerHTML = "Sorry...";
+                nextShowTimes.innerHTML = "00:00AM - 11:59PM";
+                nextShowTitle.innerHTML = "No presenters are due to go live.";
+                return;
+            }
+            // If the api call failed 
+            if(apiFail) {
+                nextUserImg.setAttribute("src", apiCallFailed);
+                nextUserName.innerHTML = "Sorry...";
+                nextShowTimes.innerHTML = makeDate(new Date().getTime());
+                nextShowTitle.innerHTML = "Cannot access schedule right now.";
+                return;
+            }
+            // If there was a sucessful response with a slot 
+            nextUserImg.setAttribute("src", obj.user.avatar);
+            nextUserName.innerHTML = obj.user.firstName + " " + obj.user.lastName;
+            nextShowTimes.innerHTML = makeDate(obj.start * 1000) + " - " + makeDate(obj.end * 1000);
+            nextShowTitle.innerHTML = obj.title;
+        }
+        // Helper function 
+        // Takes a UNIX milliseconds timestamp and transforms it to hh:mm AM/PM 
+        function makeDate(unixDate) {
+            var hours = new Date(unixDate).getHours();
+            var minutes = new Date(unixDate).getMinutes();
+            minutes = minutes < 10 ? "0" + minutes : minutes + "";
+            minutes += hours > 12 ? " PM" : " AM";
+            hours -= hours > 12 ? 12 : 0;
+            hours = hours < 10 ? "0" + hours : "" + hours;
+            return hours + ":" + minutes; 
+        }
+    </script>
+</li>
